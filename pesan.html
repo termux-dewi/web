@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pesan Gas - GasJoss</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+
+  <nav class="bg-white shadow sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+      <a href="index.html" class="flex items-center gap-3 text-2xl font-bold">
+        <i class="fas fa-fire text-orange-500"></i> GasJoss
+      </a>
+      <a href="index.html" class="text-gray-600 hover:text-orange-500">← Kembali</a>
+    </div>
+  </nav>
+
+  <div class="max-w-2xl mx-auto px-6 py-16">
+    <h1 class="text-4xl font-bold text-center mb-10">Buat Pesanan</h1>
+
+    <form id="orderForm" class="bg-white p-10 rounded-3xl shadow-xl space-y-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div><label class="block mb-2">Nama Lengkap *</label><input id="nama" required class="w-full px-5 py-4 border rounded-2xl"></div>
+        <div><label class="block mb-2">WhatsApp *</label><input id="wa" required class="w-full px-5 py-4 border rounded-2xl"></div>
+      </div>
+      <div><label class="block mb-2">Alamat Lengkap *</label><textarea id="alamat" rows="4" required class="w-full px-5 py-4 border rounded-2xl"></textarea></div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block mb-2">Jenis Tabung</label>
+          <select id="jenis" onchange="hitungTotal()" class="w-full px-5 py-4 border rounded-2xl">
+            <option value="">Pilih Tabung</option>
+            <option value="18500">3 Kg - Rp 18.500</option>
+            <option value="78000">12 Kg - Rp 78.000</option>
+            <option value="320000">50 Kg - Rp 320.000</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2">Jumlah Tabung</label>
+          <input type="number" id="jumlah" value="1" min="1" onchange="hitungTotal()" class="w-full px-5 py-4 border rounded-2xl">
+        </div>
+      </div>
+
+      <div class="bg-orange-50 p-8 rounded-2xl text-center">
+        <p class="text-lg">Total Pembayaran</p>
+        <p id="totalHarga" class="text-5xl font-bold text-orange-600">Rp 0</p>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-6 rounded-3xl text-xl font-bold">
+        Kirim Pesanan
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const API_URL = "https://your-worker-name.yourusername.workers.dev/api/orders";
+
+    function hitungTotal() {
+      const harga = parseInt(document.getElementById('jenis').value) || 0;
+      const qty = parseInt(document.getElementById('jumlah').value) || 1;
+      document.getElementById('totalHarga').textContent = "Rp " + (harga * qty).toLocaleString('id-ID');
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.textContent = "Mengirim...";
+
+      const data = {
+        nama: document.getElementById('nama').value,
+        wa: document.getElementById('wa').value,
+        alamat: document.getElementById('alamat').value,
+        jenis: document.getElementById('jenis').options[document.getElementById('jenis').selectedIndex].text,
+        jumlah: parseInt(document.getElementById('jumlah').value),
+        total: document.getElementById('totalHarga').textContent
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          alert("✅ Pesanan berhasil dikirim!");
+          window.open(result.adminWA, '_blank');
+          e.target.reset();
+          document.getElementById('totalHarga').textContent = "Rp 0";
+        }
+      } catch (err) {
+        alert("Gagal mengirim pesanan.");
+      }
+      btn.textContent = "Kirim Pesanan";
+    });
+  </script>
+</body>
+</html>
