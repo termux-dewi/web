@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - GasJoss</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    .status-baru { background-color: #fef3c7; color: #d97706; }
+    .status-dikirim { background-color: #d1fae5; color: #10b981; }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+  <div class="max-w-7xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold">GasJoss Admin Panel</h1>
+      <button onclick="logout()" class="bg-red-500 text-white px-5 py-2 rounded-xl hover:bg-red-600">
+        Logout
+      </button>
+    </div>
+
+    <!-- Login -->
+    <div id="loginSection" class="max-w-md mx-auto bg-white p-10 rounded-3xl shadow-xl">
+      <h2 class="text-2xl font-bold text-center mb-6">Login Admin</h2>
+      <input type="password" id="password" placeholder="Masukkan Password Admin" 
+             class="w-full px-5 py-4 border rounded-2xl text-center text-lg focus:outline-none focus:border-orange-500">
+      <button onclick="login()" class="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-semibold text-xl">
+        MASUK
+      </button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+      <div class="flex gap-4 mb-6">
+        <input type="text" id="searchInput" placeholder="Cari nama, ID, atau nomor WA..." 
+               onkeyup="filterOrders()" 
+               class="flex-1 px-5 py-4 border rounded-2xl focus:outline-none focus:border-orange-500">
+        <button onclick="loadOrders()" class="bg-blue-600 text-white px-8 py-4 rounded-2xl hover:bg-blue-700">
+          <i class="fas fa-refresh"></i> Refresh
+        </button>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-800 text-white">
+            <tr>
+              <th class="p-5 text-left">ID</th>
+              <th class="p-5 text-left">Waktu</th>
+              <th class="p-5 text-left">Nama</th>
+              <th class="p-5 text-left">WA</th>
+              <th class="p-5 text-left">Pesanan</th>
+              <th class="p-5 text-left">Total</th>
+              <th class="p-5 text-center">Status</th>
+              <th class="p-5 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://your-worker-name.yourusername.workers.dev/api/orders";
+    const ADMIN_PASSWORD = "gasjoss2026";   // GANTI PASSWORD INI!
+
+    let allOrders = [];
+
+    function login() {
+      if (document.getElementById('password').value === ADMIN_PASSWORD) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        loadOrders();
+      } else {
+        alert("Password salah!");
+      }
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch(API_URL);
+        allOrders = await res.json();
+        renderTable(allOrders);
+      } catch (e) {
+        alert("Gagal mengambil data");
+      }
+    }
+
+    function renderTable(orders) {
+      let html = '';
+      orders.forEach(order => {
+        const statusClass = order.status.includes("Dikirim") ? "status-dikirim" : "status-baru";
+        html += `
+          <tr class="hover:bg-gray-50">
+            <td class="p-5 font-mono">${order.id}</td>
+            <td class="p-5">${new Date(order.createdAt).toLocaleString('id-ID')}</td>
+            <td class="p-5 font-semibold">${order.nama}</td>
+            <td class="p-5">${order.wa}</td>
+            <td class="p-5">${order.jumlah} × ${order.jenis}</td>
+            <td class="p-5 font-bold">${order.total}</td>
+            <td class="p-5 text-center">
+              <span class="px-4 py-2 rounded-full text-sm \( {statusClass}"> \){order.status}</span>
+            </td>
+            <td class="p-5 text-center">
+              ${order.status !== "Sudah Dikirim" ? 
+                `<button onclick="updateStatus('${order.id}', 'Sudah Dikirim')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl text-sm">✓ Dikirim</button>` : 
+                `<span class="text-green-600 font-medium">Selesai</span>`}
+            </td>
+          </tr>`;
+      });
+      document.getElementById('ordersBody').innerHTML = html || `<tr><td colspan="8" class="text-center py-10 text-gray-500">Belum ada pesanan</td></tr>`;
+    }
+
+    async function updateStatus(id, status) {
+      if (!confirm(`Ubah status menjadi "${status}"?`)) return;
+      await fetch(`\( {API_URL}/ \){id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      loadOrders();
+    }
+
+    function filterOrders() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allOrders.filter(o => 
+        o.nama.toLowerCase().includes(keyword) || 
+        o.id.toLowerCase().includes(keyword) || 
+        o.wa.includes(keyword)
+      );
+      renderTable(filtered);
+    }
+
+    function logout() {
+      if (confirm("Keluar dari Admin Panel?")) location.reload();
+    }
+  </script>
+</body>
+</html>
